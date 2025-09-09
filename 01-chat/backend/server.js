@@ -11,7 +11,7 @@ app.use(express.json());
 app.get('/', (_req, res) => {
   res.json({ message: 'Running' });
 });
-O;
+
 app.use('/{*splat}', () => {
   throw Error('Page not found', { cause: { status: 404 } });
 });
