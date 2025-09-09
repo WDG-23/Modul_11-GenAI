@@ -71,7 +71,7 @@ function App() {
 
       const data = await res.json();
       console.log(data);
-      setAiResponse(data.result);
+      setAiResponse(data.result.content);
     } catch (error) {
       console.error('Error ', error);
     } finally {
