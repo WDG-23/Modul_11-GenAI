@@ -53,6 +53,7 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setAiResponse('');
     if (isImageGen) {
       handleImageGen();
       return;
@@ -61,17 +62,47 @@ function App() {
     try {
       setPending(true);
 
-      const res = await fetch('http://localhost:8080/messages', {
+      // KI Chat Completion ohne Streaming
+      // const res = await fetch('http://localhost:8080/messages', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({ prompt }),
+      // });
+
+      // const data = await res.json();
+      // console.log(data);
+      // setAiResponse(data.result.content);
+
+      // Chat Completions mit Streaming
+      const res = await fetch('http://localhost:8080/messages/streaming', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ prompt }),
       });
+      if (!res.body) return;
+      // console.log(res);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
 
-      const data = await res.json();
-      console.log(data);
-      setAiResponse(data.result.content);
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+
+        const lines = chunk.split('\n\n');
+        for (let line of lines) {
+          if (line.startsWith('data: ')) {
+            line = line.slice(6);
+            const parsedText = JSON.parse(line);
+            setAiResponse((p) => p + parsedText);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error ', error);
     } finally {

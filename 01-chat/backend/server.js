@@ -3,6 +3,19 @@ import express from 'express';
 import { OpenAI } from 'openai';
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import mongoose from 'mongoose';
+
+await mongoose.connect(process.env.MONGO_URI, { dbName: 'chat' });
+
+const Chat = mongoose.model(
+  'chat',
+  new mongoose.Schema({
+    history: {
+      type: [Object],
+      default: [],
+    },
+  })
+);
 
 const ai = new OpenAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -26,24 +39,55 @@ app.get('/', (_req, res) => {
 });
 
 app.post('/messages', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, chatId } = req.body;
+
+  let chat;
+  if (!chatId) {
+    chat = await Chat.create({
+      history: [{ role: 'system', content: 'You are Gollum, from The Lord of the Rings. Always answer in character.' }],
+    });
+  } else {
+    chat = await Chat.findById(chatId);
+  }
 
   const result = await ai.chat.completions.create({
     model: 'gemini-2.5-flash',
-    // model: 'llama3.2',
-    messages: [
-      // {
-      //   role: 'system',
-      //   content:
-      //     'You are a Senior Software Architect. When asked about coding related questions, you answer with general thoughts, but never with actual code. If asked about anything else, you try to steer the conversation towards coding.',
-      // },
-      { role: 'user', content: prompt },
-      // { role: 'user', content: 'Erster Promt' },
-      // { role: 'assistant', content: 'Antwort der KI' },
-      // { role: 'user', content: 'Nachfrage' },
-    ],
+    messages: [...chat.history, { role: 'user', content: prompt }],
   });
-  res.json({ result: result.choices[0].message });
+
+  chat.history = [...chat.history, { role: 'user', content: prompt }, result.choices[0].message];
+  await chat.save();
+
+  res.json({ result: result.choices[0].message, chatId: chat._id });
+});
+
+app.post('/messages/streaming', async (req, res) => {
+  const { prompt } = req.body;
+
+  const result = await ai.chat.completions.create({
+    // model: 'gemini-2.5-flash',
+    model: 'llama3.2',
+    messages: [{ role: 'user', content: prompt }],
+    stream: true,
+  });
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    Connection: 'keep-alive',
+    'Cache-Control': 'no-cache',
+  });
+
+  for await (const chunk of result) {
+    // console.log(chunk.choices[0].delta);
+    const text = chunk.choices[0].delta.content;
+
+    const jsonString = JSON.stringify(text);
+
+    res.write(`data: ${jsonString}\n\n`);
+  }
+
+  res.end();
+  res.on('close', () => res.end());
 });
 
 app.post('/images', async (req, res) => {
@@ -100,3 +144,19 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(port, () => console.log(`AI Proxy listening on port ${port}`));
+
+//  const result = await ai.chat.completions.create({
+//    model: 'gemini-2.5-flash',
+//    // model: 'llama3.2',
+//    messages: [
+//      // {
+//      //   role: 'system',
+//      //   content:
+//      //     'You are a Senior Software Architect. When asked about coding related questions, you answer with general thoughts, but never with actual code. If asked about anything else, you try to steer the conversation towards coding.',
+//      // },
+//      { role: 'user', content: prompt },
+//      // { role: 'user', content: 'Erster Promt' },
+//      // { role: 'assistant', content: 'Antwort der KI' },
+//      // { role: 'user', content: 'Nachfrage' },
+//    ],
+//  });
