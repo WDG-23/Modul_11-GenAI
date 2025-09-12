@@ -1,0 +1,40 @@
+<!--  Erste Prompt: Erstelle im Ordner 04-context7-example eine index.html. Binde das tailwind cdn und die aktuelle Version von Daisy UI ein. Erstelle mir ein Modal mit Daisy UI Components. Greife auf context7 dafür zurück. -->
+<!-- Die KI hat nicht die aktuellen Dokumentationen benutzt; DaisyUI wurde nicht richtig eingebunden und eine ältere Version von Tailwind -->
+<!-- Zweite Prompt: Please use the current version of tailwind - v4 - and daisy UI - v5. Look it up via context7 -->
+<!-- KI hat Zugriff auf context7 und die Dokumentationen angefragt und daraufhin Tailwind 4 und DaisyUI 5 via CDN richtig eingebunden. -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daisy UI Modal Example</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Daisy UI v5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
+  </head>
+
+  <body>
+    <div class="flex items-center justify-center min-h-screen bg-gray-100">
+      <!-- Modal Trigger -->
+      <button class="btn btn-primary" onclick="document.getElementById('my-modal').classList.add('modal-open')">
+        Open Modal
+      </button>
+
+      <!-- Modal -->
+      <div id="my-modal" class="modal">
+        <div class="modal-box">
+          <h2 class="font-bold text-lg">Welcome to Daisy UI Modal</h2>
+          <p class="py-4">This is a simple modal example using Daisy UI components.</p>
+          <div class="modal-action">
+            <button class="btn"
+              onclick="document.getElementById('my-modal').classList.remove('modal-open')">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+
+</html>
